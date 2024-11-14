@@ -18,8 +18,10 @@ import {
 } from "./ui/dialog";
 
 import { createWallet } from "@/lib/createWallet";
-import { useToast } from "@/hooks/use-toast";
 import { walletTypes } from "@/lib/utils";
+import { WalletCard } from "./WalletCard";
+import { useToast } from "@/hooks/use-toast";
+import { getAmountEth, getAmountSol } from "@/lib/RpcCalls";
 
 interface SolanaWalletProps {
   mnemonic: string;
@@ -38,7 +40,6 @@ export default function SolanaWallet({ mnemonic }: SolanaWalletProps) {
   const [selectedType, setSelectedType] = useState<string>(walletTypes[0]);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [showSecret, setShowSecret] = useState<{ [key: number]: boolean }>({});
-
   const { toast } = useToast();
 
   const handleShowSecret = (index: number) => {
@@ -49,6 +50,34 @@ export default function SolanaWallet({ mnemonic }: SolanaWalletProps) {
     ) {
       setShowSecret((prev) => ({ ...prev, [index]: true }));
     }
+  };
+
+  const handleCopySecret = (secret: string) => {
+    navigator.clipboard.writeText(secret);
+    toast({ description: "Secret copied to clipboard" });
+  };
+
+  const handleRefreshBalance = async (index: number) => {
+    const walletToUpdate = wallet[index];
+    let updatedBalance: number | undefined;
+
+    try {
+      if (walletToUpdate.type === "Solana") {
+        updatedBalance = await getAmountSol(walletToUpdate.address);
+      } else if (walletToUpdate.type === "Ethereum") {
+        updatedBalance = await getAmountEth(walletToUpdate.address);
+      }
+    } catch (e) {
+      console.error("Failed to fetch balance:", e);
+      toast({ description: "Failed to fetch balance", title: "Error" });
+      return;
+    }
+
+    setWallet((prevWallet) =>
+      prevWallet.map((w, i) =>
+        i === index ? { ...w, amount: updatedBalance } : w
+      )
+    );
   };
 
   return (
@@ -64,45 +93,17 @@ export default function SolanaWallet({ mnemonic }: SolanaWalletProps) {
         </Button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-60 custom-scrollbar overflow-hidden">
-        {wallet &&
-          wallet.map((w, index) => (
-            <div className="border p-4 rounded" key={index}>
-              <div className="flex flex-col">Account type: {w.type}</div>
-              <div className="flex flex-col break-words">
-                <div>Balance: </div>
-                <div>
-                  {w.amount == undefined ? "N/A" : w.amount} {"  "}
-                  {w.type == "Solana" ? "Sol" : "Eth"}
-                </div>
-              </div>
-              <div className=" flex flex-col break-words">
-                <div>publicKey: </div>
-                <div>{w.address}</div>
-              </div>
-              <div className="break-words">
-                <div>Secret:</div>
-                {showSecret[index] ? (
-                  <div>
-                    <div>{w.secret}</div>
-                    <Button
-                      onClick={() => {
-                        navigator.clipboard.writeText(w.secret);
-                        toast({
-                          description: "Secret copied to clipboard",
-                        });
-                      }}
-                    >
-                      Copy
-                    </Button>
-                  </div>
-                ) : (
-                  <Button onClick={() => handleShowSecret(index)}>
-                    Show Secret
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
+        {wallet.map((w, index) => (
+          <WalletCard
+            key={index}
+            index={index}
+            wallet={w}
+            showSecret={showSecret[index] || false}
+            onShowSecret={handleShowSecret}
+            onCopySecret={handleCopySecret}
+            onRefreshBalance={handleRefreshBalance}
+          />
+        ))}
       </div>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent>

@@ -9,8 +9,10 @@ import SolanaWallet from "./SolanaWallet";
 export default function Wallet() {
   const [mnemonic, setMnemonic] = useState<string>("");
   const [copied, setCopied] = useState<boolean>(false);
+  const [hide, setHide] = useState<boolean>(false);
   const handleCopy = () => {
     navigator.clipboard.writeText(mnemonic);
+    setHide(true);
     setCopied(true);
   };
 
@@ -24,10 +26,12 @@ export default function Wallet() {
           >
             Generate Mnemonic
           </Button>
+        ) : hide ? (
+          <div> Hidden </div>
         ) : (
           <span className=" flex flex-col gap-10 w-full items-center">
             <CodeBlock darkMode className="max-w-2xl" value={mnemonic} />
-            <Button variant="secondary" onClick={handleCopy}>
+            <Button variant="secondary" onClick={handleCopy}  >
               {copied ? (
                 <span className="flex gap-2 text-center">
                   {" "}

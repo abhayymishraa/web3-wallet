@@ -13,7 +13,7 @@ export const getAmountSol = async (address: string) => {
           jsonrpc: "2.0",
           id: 1,
           method: "getBalance",
-          params: [address],
+          params: [address],  
         }),
       }
     );
@@ -58,5 +58,38 @@ export const getAmountEth = async (address: string) => {
     console.error("Failed to fetch balance:", e);
     throw new Error("Unexpected response structure");
     return;
+  }
+};
+
+
+
+
+export const getAccountInfoSolDev = async (address: string) => {
+  try {
+    const response = await fetch(
+      solanaApiUrl || "https://api.devnet.solana.com",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "getBalance",
+          params: [address],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Network response was not ok: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.result.value / 1000000000; // Convert lamports to SOL
+  } catch (error) {
+    console.error("Failed to fetch account info:", error);
+    throw error;
   }
 };

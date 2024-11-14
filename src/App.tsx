@@ -4,7 +4,9 @@ import Wallet from "@/components/Wallet";
 function App() {
   return (
     <div className="w-full text-white">
+         
       <Wallet />
+         
     </div>
   );
 }
